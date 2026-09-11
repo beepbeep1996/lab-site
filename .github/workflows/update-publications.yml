@@ -1,0 +1,48 @@
+name: Update publications from ORCID
+
+# 매주 월요일 오전 9시(KST) + Actions 탭에서 수동 실행
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1"   # UTC 00:00 Mon = KST 09:00 Mon
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync publications from ORCID
+        run: python scripts/update_publications.py
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "신규 논문 없음 — PR을 만들지 않습니다."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: auto/update-publications
+          delete-branch: true
+          commit-message: "Add new publications from ORCID"
+          title: "신규 논문 자동 반영 (ORCID)"
+          body-path: pr_body.md
+          add-paths: index.html
+          labels: publications, automated
