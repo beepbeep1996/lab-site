@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://beepbeep1996.github.io/lab-site/sitemap.xml
